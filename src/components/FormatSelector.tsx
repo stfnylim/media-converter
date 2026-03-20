@@ -51,7 +51,7 @@ export function FormatSelector({ formats, selected, onSelect, label }: FormatSel
                     key={fmt.ext}
                     onClick={() => onSelect(fmt)}
                     className={[
-                      "px-3 py-1.5 rounded-lg border text-sm font-semibold font-mono transition-all",
+                      "px-3 py-2 min-h-[44px] rounded-lg border text-sm font-semibold font-mono transition-all",
                       isSelected
                         ? CATEGORY_COLORS[fmt.category] + " ring-2 ring-violet-400 scale-105"
                         : "bg-gray-800 text-gray-300 border-gray-700 hover:border-gray-500 hover:bg-gray-700",

@@ -57,7 +57,7 @@ function NumberInput({ value, onChange, min, max, step = 1, suffix }: {
         max={max}
         step={step}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-28 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-violet-500"
+        className="w-full max-w-[7rem] bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-violet-500"
       />
       {suffix && <span className="text-sm text-gray-500">{suffix}</span>}
     </div>
@@ -73,7 +73,7 @@ function TextInput({ value, onChange, placeholder }: {
       value={value}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
-      className="w-40 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-violet-500 placeholder-gray-600"
+      className="w-full max-w-[10rem] bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-violet-500 placeholder-gray-600"
     />
   );
 }

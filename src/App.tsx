@@ -25,6 +25,11 @@ import {
   buildImageCommand,
 } from "./utils/ffmpegCommands";
 
+// SharedArrayBuffer is required by FFmpeg.wasm. It's available when cross-origin
+// isolated (COOP/COEP headers), which coi-serviceworker injects on GitHub Pages.
+// iOS Safari < 15.2 does not support it at all.
+const sabSupported = typeof SharedArrayBuffer !== "undefined";
+
 export default function App() {
   const ffmpeg = useFFmpeg();
 
@@ -102,7 +107,7 @@ export default function App() {
   const isConverting = ffmpeg.status === "converting";
   const isLoading = ffmpeg.status === "loading";
   const isDone = ffmpeg.status === "done";
-  const canConvert = !!file && !!outputFormat && ffmpeg.status === "ready";
+  const canConvert = !!file && !!outputFormat && ffmpeg.status === "ready" && sabSupported;
 
   const statusMessage = {
     idle: "Initializing...",
@@ -142,6 +147,17 @@ export default function App() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+        {/* iOS / browser compatibility warning */}
+        {!sabSupported && (
+          <div className="p-4 bg-red-900/20 border border-red-700/40 rounded-xl text-red-300 text-sm space-y-1">
+            <p className="font-semibold">Browser not supported</p>
+            <p>
+              Your browser does not support <code className="font-mono text-xs bg-red-950 px-1 rounded">SharedArrayBuffer</code>,
+              which is required by FFmpeg. Please use Chrome, Firefox, or Safari 15.2+ on iOS.
+            </p>
+          </div>
+        )}
+
         {/* FFmpeg Loading Banner */}
         {isLoading && (
           <div className="flex items-center gap-3 p-4 bg-yellow-900/20 border border-yellow-700/40 rounded-xl text-yellow-300 text-sm">

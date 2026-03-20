@@ -59,10 +59,11 @@ export function DropZone({ onFile, disabled }: DropZoneProps) {
         </div>
         <div>
           <p className="text-lg font-semibold text-gray-200">
-            {dragging ? "Drop it!" : "Drop a file or click to browse"}
+            {dragging ? "Drop it!" : <><span className="hidden sm:inline">Drop a file or click</span><span className="sm:hidden">Tap</span> to browse</>}
           </p>
           <p className="text-sm text-gray-500 mt-1">
-            Video, audio, image, or GIF • Max ~500 MB recommended
+            Video, audio, image, or GIF
+            <span className="hidden sm:inline"> • Max ~500 MB recommended</span>
           </p>
         </div>
         <div className="flex flex-wrap gap-1 justify-center max-w-md">
