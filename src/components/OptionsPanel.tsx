@@ -125,17 +125,6 @@ export function OptionsPanel({
             options={[{ value: "low", label: "Low (fastest)" }, { value: "medium", label: "Medium" }, { value: "high", label: "High (slowest)" }]}
           />
         </Row>
-        <Row label="Start Time">
-          <div className="flex items-center gap-2">
-            <NumberInput value={gifOptions.startTime} onChange={(v) => onGifChange({ ...gifOptions, startTime: v })} min={0} max={9999} step={0.1} suffix="sec" />
-          </div>
-        </Row>
-        <Row label="Duration">
-          <div className="flex items-center gap-2">
-            <NumberInput value={gifOptions.duration} onChange={(v) => onGifChange({ ...gifOptions, duration: v })} min={0} max={9999} step={0.1} suffix="sec" />
-            <span className="text-xs text-gray-500">0 = full</span>
-          </div>
-        </Row>
         <Row label="Loop">
           <Select
             value={String(gifOptions.loop)}

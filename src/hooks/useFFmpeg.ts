@@ -76,12 +76,17 @@ export function useFFmpeg(): UseFFmpegReturn {
       await ffmpeg.exec(resolvedArgs);
 
       const outputData = await ffmpeg.readFile(outputFileName);
-      // FileData is Uint8Array | string; copy into a guaranteed plain ArrayBuffer for Blob
+      // FileData is Uint8Array | string.
+      // Uint8Array.buffer may be a SharedArrayBuffer (used internally by FFmpeg.wasm),
+      // which Blob doesn't accept. buffer.slice() produces a plain ArrayBuffer via a
+      // native C++ copy — faster than the JS copy.set() approach for large outputs.
       let blob: Blob;
       if (outputData instanceof Uint8Array) {
-        const copy = new Uint8Array(outputData.length);
-        copy.set(outputData);
-        blob = new Blob([copy.buffer as ArrayBuffer], { type: getMimeForName(outputFileName) });
+        const buf = outputData.buffer.slice(
+          outputData.byteOffset,
+          outputData.byteOffset + outputData.byteLength
+        ) as ArrayBuffer;
+        blob = new Blob([buf], { type: getMimeForName(outputFileName) });
       } else {
         blob = new Blob([outputData as string], { type: getMimeForName(outputFileName) });
       }

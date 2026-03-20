@@ -1,15 +1,12 @@
 export interface GifOptions {
   fps: number;
   width: number; // 0 = keep original
-  startTime: number; // seconds
-  duration: number; // 0 = full
   loop: number; // 0 = infinite, -1 = no loop, n = n times
   quality: "low" | "medium" | "high";
   dither: boolean;
 }
 
 export interface VideoOptions {
-  videoBitrate: string; // e.g. "2M"
   audioBitrate: string; // e.g. "128k"
   resolution: string; // e.g. "1920x1080" or "" for keep
   fps: string; // e.g. "30" or "" for keep
@@ -29,20 +26,22 @@ export interface ImageOptions {
   height: number; // 0 = keep
 }
 
-export type ConversionOptions = GifOptions | VideoOptions | AudioOptions | ImageOptions;
+export interface TrimOptions {
+  start: number; // seconds, 0 = beginning
+  end: number;   // seconds, 0 = full duration
+  totalDuration: number;
+}
+
 
 export const DEFAULT_GIF_OPTIONS: GifOptions = {
   fps: 15,
   width: 640,
-  startTime: 0,
-  duration: 0,
   loop: 0,
   quality: "medium",
   dither: true,
 };
 
 export const DEFAULT_VIDEO_OPTIONS: VideoOptions = {
-  videoBitrate: "2M",
   audioBitrate: "128k",
   resolution: "",
   fps: "",
@@ -65,27 +64,36 @@ export const DEFAULT_IMAGE_OPTIONS: ImageOptions = {
 export function buildGifCommand(
   inputName: string,
   outputName: string,
-  opts: GifOptions
+  opts: GifOptions,
+  trim: TrimOptions
 ): string[] {
-  const args: string[] = ["-i", inputName];
+  const args: string[] = [];
 
-  if (opts.startTime > 0) args.push("-ss", String(opts.startTime));
-  if (opts.duration > 0) args.push("-t", String(opts.duration));
+  // Trim args must come before -i for accurate seeking
+  if (trim.start > 0) args.push("-ss", trim.start.toFixed(3));
+  args.push("-i", inputName);
+  if (trim.end > 0 && trim.end < trim.totalDuration) {
+    args.push("-t", (trim.end - trim.start).toFixed(3));
+  }
 
-  const scaleFilter = opts.width > 0 ? `scale=${opts.width}:-1:flags=lanczos` : "scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos";
-  const palettegenFlags = opts.quality === "high" ? "stats_mode=full" : opts.quality === "low" ? "stats_mode=diff" : "stats_mode=single";
+  const scaleFilter =
+    opts.width > 0
+      ? `scale=${opts.width}:-1:flags=lanczos`
+      : "scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos";
+  const palettegenFlags =
+    opts.quality === "high"
+      ? "stats_mode=full"
+      : opts.quality === "low"
+      ? "stats_mode=diff"
+      : "stats_mode=single";
   const ditherFlag = opts.dither ? "bayer:bayer_scale=5" : "none";
 
   const filters = `fps=${opts.fps},${scaleFilter},split[s0][s1];[s0]palettegen=${palettegenFlags}[p];[s1][p]paletteuse=dither=${ditherFlag}`;
-
   args.push("-vf", filters);
-  if (opts.loop === 0) {
-    args.push("-loop", "0");
-  } else if (opts.loop === -1) {
-    args.push("-loop", "-1");
-  } else {
-    args.push("-loop", String(opts.loop));
-  }
+
+  if (opts.loop === 0) args.push("-loop", "0");
+  else if (opts.loop === -1) args.push("-loop", "-1");
+  else args.push("-loop", String(opts.loop));
 
   args.push("-f", "gif", outputName);
   return args;
@@ -95,9 +103,16 @@ export function buildVideoCommand(
   inputName: string,
   outputName: string,
   outputExt: string,
-  opts: VideoOptions
+  opts: VideoOptions,
+  trim: TrimOptions
 ): string[] {
-  const args: string[] = ["-i", inputName];
+  const args: string[] = [];
+
+  if (trim.start > 0) args.push("-ss", trim.start.toFixed(3));
+  args.push("-i", inputName);
+  if (trim.end > 0 && trim.end < trim.totalDuration) {
+    args.push("-t", (trim.end - trim.start).toFixed(3));
+  }
 
   // Audio extraction
   if (["mp3", "aac", "wav", "ogg", "flac", "m4a", "opus", "wma"].includes(outputExt)) {
@@ -131,9 +146,16 @@ export function buildAudioCommand(
   inputName: string,
   outputName: string,
   outputExt: string,
-  opts: AudioOptions
+  opts: AudioOptions,
+  trim: TrimOptions
 ): string[] {
-  const args: string[] = ["-i", inputName, "-vn"];
+  const args: string[] = [];
+
+  if (trim.start > 0) args.push("-ss", trim.start.toFixed(3));
+  args.push("-i", inputName, "-vn");
+  if (trim.end > 0 && trim.end < trim.totalDuration) {
+    args.push("-t", (trim.end - trim.start).toFixed(3));
+  }
 
   args.push("-ar", opts.sampleRate, "-ac", opts.channels);
 
@@ -161,9 +183,14 @@ export function buildImageCommand(
   inputName: string,
   outputName: string,
   outputExt: string,
-  opts: ImageOptions
+  opts: ImageOptions,
+  trim: TrimOptions
 ): string[] {
-  const args: string[] = ["-i", inputName];
+  const args: string[] = [];
+
+  // For image extraction from video, seek to the trim start frame
+  if (trim.start > 0) args.push("-ss", trim.start.toFixed(3));
+  args.push("-i", inputName);
 
   const filters: string[] = [];
   if (opts.width > 0 && opts.height > 0) {
@@ -177,7 +204,7 @@ export function buildImageCommand(
   if (filters.length > 0) args.push("-vf", filters.join(","));
 
   if (outputExt === "jpg") {
-    args.push("-q:v", String(Math.round(2 + (100 - opts.quality) * 29 / 100)));
+    args.push("-q:v", String(Math.round(2 + ((100 - opts.quality) * 29) / 100)));
   } else if (outputExt === "webp") {
     args.push("-quality", String(opts.quality));
   } else if (outputExt === "png") {

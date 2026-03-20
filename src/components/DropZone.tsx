@@ -6,7 +6,10 @@ interface DropZoneProps {
   disabled?: boolean;
 }
 
-const ACCEPTED_MIME = FORMATS.flatMap((f) => f.mimeTypes).join(",");
+// Use extensions instead of MIME types — macOS resolves extensions instantly
+// (string comparison) whereas MIME types require reading file metadata for every
+// file in the directory, causing the Open button to delay by several seconds.
+const ACCEPTED_EXTS = FORMATS.map((f) => `.${f.ext}`).join(",");
 
 export function DropZone({ onFile, disabled }: DropZoneProps) {
   const [dragging, setDragging] = useState(false);
@@ -48,7 +51,7 @@ export function DropZone({ onFile, disabled }: DropZoneProps) {
       <input
         type="file"
         className="sr-only"
-        accept={ACCEPTED_MIME}
+        accept={ACCEPTED_EXTS}
         onChange={handleChange}
         disabled={disabled}
       />
